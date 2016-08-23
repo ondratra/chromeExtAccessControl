@@ -12,9 +12,11 @@ export default class Singleton {
         }
     }
 
+
     static get instance() {
+        // 'this' refers to class prototype in static methods
         if (!this[singletonInstance]) {
-            this[singletonInstance] = new Singleton(constructorLock);
+            this[singletonInstance] = new this(constructorLock);
         }
 
         return this[singletonInstance];

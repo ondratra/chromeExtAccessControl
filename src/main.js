@@ -2,4 +2,6 @@
 
 import ChromeExtension from './extension.js';
 
-ChromeExtension.instance.run();
+chrome.runtime.onInstalled.addListener(function () {
+    ChromeExtension.instance.run();
+});
