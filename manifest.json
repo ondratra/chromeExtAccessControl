@@ -6,7 +6,7 @@
     "version": "1.0",
 
     "background": {
-        "scripts": ["build/build.js"]
+        "scripts": ["./build.js"]
     },
 
     "permissions": [

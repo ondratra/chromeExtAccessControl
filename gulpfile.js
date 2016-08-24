@@ -16,9 +16,10 @@ const prettyBytes = require('pretty-bytes');
 // setup project parameters
 const sourceFile = './src/main.js';
 const destFolder = './build/';
-const destFile = 'build.js';
-const destFileMinified = 'build.min.js';
+const destFile = 'regular/build.js';
+const destFileMinified = 'min/build.js';
 const allSourceFiles = ['./src/**/*.js'];
+const manifestTemplate = './manifest.json';
 
 
 // get browserify stream with common settings
@@ -44,6 +45,14 @@ gulp.task('uglify', ['browserify'], function () {
         .pipe(rename(destFileMinified))
         .pipe(uglify({mangle: { keep_fnames: true} }))
         .pipe(gulp.dest(destFolder));
+});
+
+// additional minification of built javascript files
+gulp.task('buildManifest', function () {
+    return gulp.src(manifestTemplate)
+        .pipe(rename('manifest.json'))
+        .pipe(gulp.dest(destFolder + 'regular'))
+        .pipe(gulp.dest(destFolder + 'min'));
 });
 
 //
@@ -94,11 +103,20 @@ gulp.task('browserifyWatch', function () {
         return bundler.bundle()
             .pipe(source(destFile))
             .pipe(gulp.dest(destFolder));
+            /* usefull?
+            .on('end', function () {
+                gulp.start('buildManifest');
+            });
+            */
     }
 
     return rebundle();
 });
 
 
+
 // default task: create full build
-gulp.task('default', ['uglify']);
+gulp.task('default', ['uglify', 'buildManifest'], function () {
+    // after build is done, print stats
+    gulp.start('buildStats');
+});
