@@ -1,0 +1,30 @@
+body {
+    width: 300px;
+}
+
+th {
+    padding: 5px;
+}
+
+p {
+    line-height: 20px;
+}
+
+.errorMessage {
+    opacity: 0;
+    transition: opacity 1s;
+    color: #dd0000;
+}
+
+.errorMessage.newError {
+    opacity: 1;
+}
+
+.delete {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.delete:hover {
+    text-decoration: underline;
+}

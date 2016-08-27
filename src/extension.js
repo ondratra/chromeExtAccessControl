@@ -22,6 +22,7 @@ export default class ChromeExtension extends Singleton {
         this.resetRequestState();
         this.tabObserver = TabsObserver.instance;
 
+        // default settings
         // pairs of [fromUrlRegexp, toUrlRegexp]
         this.rules = [
             ['.*://.*/.*', '.*://.*/.*'] // from "everywhere" to "everywhere"
@@ -39,8 +40,13 @@ export default class ChromeExtension extends Singleton {
             throw new Error('Chrome object not found. Is code runnig in browser?');
         }
 
-
+        chrome.storage.local.set({rules: this.rules});
         this.install();
+    }
+
+    // used by gui
+    setRules(newRules) {
+        this.rules = newRules;
     }
 
     install() {

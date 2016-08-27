@@ -1,7 +1,10 @@
-function () {
+document.addEventListener('DOMContentLoaded', function () {
     var defaultSettings = {
-        rules: []
+        rules: [
+            ['.*://.*/.*', '.*://.*/.*']
+        ]
     };
+    var errorMsgDuration = 3000;
 
     var refreshSettings = function () {
         chrome.storage.local.get(defaultSettings, function (settings) {
@@ -15,10 +18,16 @@ function () {
                 newHtml += '<tr>';
                 newHtml += '<td>' + fromUrlRegexp + '</td>'
                 newHtml += '<td>' + toUrlRegexp + '</td>';
-                newHtml += '<td><span class="Delete">X</td>';
+                newHtml += '<td><span class="delete" data-index="' + i + '">X</td>';
                 newHtml += '</tr>';
             }
             ruleList.innerHTML = newHtml;
+
+            document.querySelector('.fromUrlRegexp').value = '';
+            document.querySelector('.toUrlRegexp').value = '';
+
+            // refresh settings in background script
+            chrome.extension.getBackgroundPage().chromeExtension.setRules(settings.rules);
         });
     };
 
@@ -30,32 +39,79 @@ function () {
         setTimeout(function () {
             // remove "newError" class
             errorMessage.className = errorMessage.className.replace(/(?:^|\s)newError(?!\S)/g ,'');
-        }, 1000);
+        }, errorMsgDuration);
     };
 
     var addRule = function () {
         var fromUrlRegexp = document.querySelector('.fromUrlRegexp');
         var toUrlRegexp = document.querySelector('.toUrlRegexp');
 
-        var validRegexpPattern = '/^((?:(?:[^?+*{}()[\]\\|]+|\\.|\[(?:\^?\\.|\^[^\\]|[^\\^])(?:[^\]\\]+|\\.)*\]|\((?:\?[:=!]|\?<[=!]|\?>)?(?1)??\)|\(\?(?:R|[+-]?\d+)\))(?:(?:[?+*]|\{\d+(?:,\d*)?\})[?+]?)?|\|)*)$/';
-
-        var regexpTester = new RegExp(validRegexpPattern);
-        if (!regexpTester.test(fromUrlRegexp)) {
-            printError('FromUrlRegexp "' + fromUrlRegexp + '" is not valid regular expression.');
-        } else if (regexpTester.test(fromUrlRegexp)) {
-            printError('ToUrlRegexp "' + toUrlRegexp + '" is not valid regular expression.');
+        try {
+            if (fromUrlRegexp.value.trim()) {
+                new RegExp(fromUrlRegexp.value)
+            } else {
+                throw new Error();
+            }
+        } catch(e) {
+            printError('FromUrlRegexp "' + fromUrlRegexp.value + '" is not valid regular expression.');
+            return;
         }
+        try {
+            if (toUrlRegexp.value.trim()) {
+                new RegExp(toUrlRegexp.value)
+            } else {
+                throw new Error();
+            }
+        } catch(e) {
+            printError('ToUrlRegexp "' + toUrlRegexp.value + '" is not valid regular expression.');
+            return;
+        }
+
 
         chrome.storage.local.get(defaultSettings, function (settings) {
             var newRules = settings.rules;
-            newRules.push([fromUrlRegexp.value, toUrlRegexp]);
+            newRules.push([fromUrlRegexp.value, toUrlRegexp.value]);
 
             chrome.storage.local.set({
                 rules: newRules
             });
+
+            refreshSettings();
         });
     };
 
-}();
+    var removeRule = function (index) {
+        chrome.storage.local.get(defaultSettings, function (settings) {
+            var newRules = settings.rules;
+            newRules.splice(index, 1);
 
+            chrome.storage.local.set({
+                rules: newRules
+            });
+
+            refreshSettings();
+        });
+    };
+
+    var init = function () {
+        // setup new rule creation
+        var button = document.querySelector('.saveNewRule');
+        button.addEventListener('click', function () {
+            addRule();
+        });
+
+        // setup rule removal
+        var ruleList = document.querySelector('.ruleList');
+        ruleList.addEventListener('click', function (event) {
+            var clickedElement = event.target;
+            if (clickedElement.className.match(/(^|\s)delete(\s|$)/)) {
+                removeRule(clickedElement.getAttribute('data-index'));
+            }
+        });
+
+        // refresh rule list gui
+        refreshSettings();
+    };
+    init();
+});
 
