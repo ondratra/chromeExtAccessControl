@@ -12,21 +12,22 @@ const size = require('gulp-size');
 const mergeStream = require('merge-stream');
 const gutil = require('gulp-util');
 const prettyBytes = require('pretty-bytes');
+const del = require('del');
 
 // setup project parameters
-const sourceFile = './src/main.js';
+const sourceFolder = './src/';
+const sourceFile = 'main.js';
 const destFolder = './build/';
 const destFile = 'regular/build.js';
 const destFileMinified = 'min/build.js';
 const allSourceFiles = ['./src/**/*.js'];
 const manifestTemplate = './manifest.json';
 
-
 // get browserify stream with common settings
 function getBrowserify() {
     return browserify({
         debug: true,
-        entries: [sourceFile]
+        entries: [sourceFolder + sourceFile]
     })
     .transform("babelify", {presets: ["es2015"]});
 }
@@ -51,6 +52,12 @@ gulp.task('uglify', ['browserify'], function () {
 gulp.task('buildManifest', function () {
     return gulp.src(manifestTemplate)
         .pipe(rename('manifest.json'))
+        .pipe(gulp.dest(destFolder + 'regular'))
+        .pipe(gulp.dest(destFolder + 'min'));
+});
+
+gulp.task('buildGui', function () {
+    return gulp.src(sourceFolder + 'gui/**/*', { base: sourceFolder })
         .pipe(gulp.dest(destFolder + 'regular'))
         .pipe(gulp.dest(destFolder + 'min'));
 });
@@ -114,9 +121,12 @@ gulp.task('browserifyWatch', function () {
 });
 
 
+gulp.task('clean', function () {
+    del([destFolder + '**/*']);
+});
 
 // default task: create full build
-gulp.task('default', ['uglify', 'buildManifest'], function () {
+gulp.task('default', ['uglify', 'buildManifest', 'buildGui'], function () {
     // after build is done, print stats
     gulp.start('buildStats');
 });
