@@ -76,9 +76,8 @@ export default class ChromeExtension extends Singleton {
         // create request info record
         this.runningRequestData[requestDetails.requestId] = {};
 
-        let fromUrl = this.tabObserver.getTabUrl(requestDetails.tabId);
-        this.runningRequestData[requestDetails.requestId].sentFromUrl = fromUrl;
-        let someRuleApply = this.someRuleApply(fromUrl, requestDetails.url);
+        let fromUrl = this.runningRequestData[requestDetails.requestId].sentFromUrl = this.tabObserver.getTabUrl(requestDetails.tabId);
+        let someRuleApply = this.runningRequestData[requestDetails.requestId].someRuleApply = this.someRuleApply(fromUrl, requestDetails.url);
         this.log('sendRequest_start', [requestDetails, someRuleApply]);
 
         if (someRuleApply) {
@@ -113,7 +112,7 @@ export default class ChromeExtension extends Singleton {
     }
 
     recieveResponse(responseDetails) {
-        let someRuleApply = this.someRuleApply(this.runningRequestData[responseDetails.requestId].sentFromUrl, responseDetails.url);
+        let someRuleApply = this.runningRequestData[responseDetails.requestId].someRuleApply;
         this.log('recieveResponse_start', [responseDetails, someRuleApply]);
 
         if (someRuleApply) {
