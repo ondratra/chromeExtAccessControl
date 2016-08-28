@@ -28,3 +28,8 @@ p {
 .delete:hover {
     text-decoration: underline;
 }
+
+.downloadLog:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}

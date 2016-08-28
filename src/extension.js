@@ -13,8 +13,6 @@ const headers = {
 };
 
 export default class ChromeExtension extends Singleton {
-    // set options here
-    // chrome.storage.local.set({'myOptionKey': myOptionValue});
 
     constructor(lock) {
         super(lock);

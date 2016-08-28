@@ -4,6 +4,7 @@
 
 Extension for chrome-like browser that enables manipulations with HTTP Access Control.
 Can be used to send requests outside currently visited web page's domain.
+It's written in ECMA6 except GUI that is written in vanilla js.
 
 # Install
 ```
