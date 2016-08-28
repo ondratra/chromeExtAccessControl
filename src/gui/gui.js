@@ -1,10 +1,12 @@
+// gui is written in vanilla javascript
 document.addEventListener('DOMContentLoaded', function () {
     var defaultSettings = {
         rules: [
-            ['.*://.*/.*', '.*://.*/.*']
+            ['^.*:\/\/.*\/.*$', '^.*:\/\/.*\/.*$']
         ]
     };
     var errorMsgDuration = 3000;
+    var niceJsonSpaces = 4;
 
     var refreshSettings = function () {
         chrome.storage.local.get(defaultSettings, function (settings) {
@@ -93,10 +95,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     };
 
+    var downloadLog = function () {
+        var logRecords = chrome.extension.getBackgroundPage().chromeExtension.getLogRecords();
+        var logJson = JSON.stringify(logRecords, null, niceJsonSpaces);
+
+        var popupWindow = window.open("data:text/html;charset=utf-8," + encodeURIComponent(logJson));
+    };
+
     var init = function () {
         // setup new rule creation
-        var button = document.querySelector('.saveNewRule');
-        button.addEventListener('click', function () {
+        var newRuleButton = document.querySelector('.saveNewRule');
+        newRuleButton.addEventListener('click', function () {
             addRule();
         });
 
@@ -107,6 +116,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (clickedElement.className.match(/(^|\s)delete(\s|$)/)) {
                 removeRule(clickedElement.getAttribute('data-index'));
             }
+        });
+
+        // setup log download
+        var downloadButton = document.querySelector('.downloadLog');
+        downloadButton.addEventListener('click', function () {
+            downloadLog();
         });
 
         // refresh rule list gui

@@ -19,19 +19,15 @@ export default class ChromeExtension extends Singleton {
     constructor(lock) {
         super(lock);
 
-        this.resetRequestState();
+        this.runningRequestData = {};
         this.tabObserver = TabsObserver.instance;
 
         // default settings
         // pairs of [fromUrlRegexp, toUrlRegexp]
         this.rules = [
-            ['.*://.*/.*', '.*://.*/.*'] // from "everywhere" to "everywhere"
+            ['^.*:\/\/.*\/.*$', '^.*:\/\/.*\/.*$'] // from "everywhere" to "everywhere"
         ];
-    }
-
-    resetRequestState() {
-        this.accessControlPresent = null;
-        this.sentFromUrl = null;
+        this.logRecords = [];
     }
 
     run() {
@@ -40,7 +36,6 @@ export default class ChromeExtension extends Singleton {
             throw new Error('Chrome object not found. Is code runnig in browser?');
         }
 
-        chrome.storage.local.set({rules: this.rules});
         this.install();
     }
 
@@ -57,6 +52,15 @@ export default class ChromeExtension extends Singleton {
         chrome.webRequest.onBeforeSendHeaders.addListener((arg) => {return this.sendRequest(arg)}, settings, ["blocking", "requestHeaders"]);
     }
 
+    log(msg, values = undefined) {
+        this.logRecords.push([msg, values]);
+    }
+
+    // used by gui
+    getLogRecords() {
+        return this.logRecords;
+    }
+
     someRuleApply(fromUrl, toUrl) {
         for (let [fromUrlRegexp, toUrlRegexp] of this.rules) {
             let tmpFrom = new RegExp(fromUrlRegexp);
@@ -71,9 +75,15 @@ export default class ChromeExtension extends Singleton {
     }
 
     sendRequest(requestDetails) {
-        this.sentFromUrl = this.tabObserver.getTabUrl(requestDetails.tabId);
+        // create request info record
+        this.runningRequestData[requestDetails.requestId] = {};
 
-        if (this.someRuleApply(this.sentFromUrl, requestDetails.url)) {
+        let fromUrl = this.tabObserver.getTabUrl(requestDetails.tabId);
+        this.runningRequestData[requestDetails.requestId].sentFromUrl = fromUrl;
+        let someRuleApply = this.someRuleApply(fromUrl, requestDetails.url);
+        this.log('sendRequest_start', [requestDetails, someRuleApply]);
+
+        if (someRuleApply) {
             let originHeaderExists = false;
             let ruleToEnsure = {
                 name: "Origin",
@@ -87,7 +97,7 @@ export default class ChromeExtension extends Singleton {
                 }
 
                 if (headerRow.name.toLowerCase() === headers.AccessControlRequestHeaders.toLowerCase()) {
-                    this.accessControlPresent = headerRow.value;
+                    this.runningRequestData[requestDetails.requestId].accessControlPresent = headerRow.value;
                 }
             }
 
@@ -99,12 +109,16 @@ export default class ChromeExtension extends Singleton {
         let result = {
             requestHeaders: requestDetails.requestHeaders
         };
+        this.log('sendRequest_end', [result]);
 
         return result;
     }
 
     recieveResponse(responseDetails) {
-        if (this.someRuleApply(this.sentFromUrl, responseDetails.url)) {
+        let someRuleApply = this.someRuleApply(this.runningRequestData[responseDetails.requestId].sentFromUrl, responseDetails.url);
+        this.log('recieveResponse_start', [responseDetails, someRuleApply]);
+
+        if (someRuleApply) {
             let originHeaderExists = false;
             let ruleToEnsure = {
                 name: headers.AccessControlAllowOrigin,
@@ -123,10 +137,10 @@ export default class ChromeExtension extends Singleton {
                 responseDetails.responseHeaders.push(ruleToEnsure);
             }
 
-            if (this.accessControlPresent) {
+            if (this.runningRequestData[responseDetails.requestId].accessControlPresent) {
                 responseDetails.responseHeaders.push({
                     name: headers.AccessControlAllowHeaders,
-                    value: this.accessControlPresent
+                    value: this.runningRequestData[responseDetails.requestId].accessControlPresent
                 });
             }
 
@@ -136,7 +150,8 @@ export default class ChromeExtension extends Singleton {
         let result = {
             responseHeaders: responseDetails.responseHeaders
         };
-        this.resetRequestState();
+        delete this.runningRequestData[responseDetails.requestId]; // request completed => delete request data
+        this.log('recieveResponse_end', [result]);
 
         return result;
     }
