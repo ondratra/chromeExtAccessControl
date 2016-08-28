@@ -20,7 +20,7 @@ const sourceFile = 'main.js';
 const destFolder = './build/';
 const destFile = 'regular/build.js';
 const destFileMinified = 'min/build.js';
-const allSourceFiles = ['./src/**/*.js'];
+const allSourceFiles = ['./src/**/!(gui).js']; // include all .js file except gui scripts
 const manifestTemplate = './manifest.json';
 
 // get browserify stream with common settings
