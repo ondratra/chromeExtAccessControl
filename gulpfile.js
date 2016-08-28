@@ -120,13 +120,15 @@ gulp.task('browserifyWatch', function () {
     return rebundle();
 });
 
+gulp.task('build', ['uglify', 'buildManifest', 'buildGui'], function () {
+    // after build is done, print stats
+    gulp.start('buildStats');
+});
+
 
 gulp.task('clean', function () {
     del([destFolder + '**/*']);
 });
 
 // default task: create full build
-gulp.task('default', ['uglify', 'buildManifest', 'buildGui'], function () {
-    // after build is done, print stats
-    gulp.start('buildStats');
-});
+gulp.task('default', ['build']);
