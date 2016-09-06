@@ -1,6 +1,5 @@
 // require dependencies
 const browserify = require('browserify');
-const babelify = require('babelify');
 const watchify = require('watchify');
 const errorify = require('errorify');
 const gulp = require('gulp');
@@ -29,7 +28,8 @@ function getBrowserify() {
         debug: true,
         entries: [sourceFolder + sourceFile]
     })
-    .transform("babelify", {presets: ["es2015"]});
+    .transform('rollupify', {config: {}})
+    .transform('babelify', {presets: ['es2015']});
 }
 
 // one time compilation of ECMA files into pure js
